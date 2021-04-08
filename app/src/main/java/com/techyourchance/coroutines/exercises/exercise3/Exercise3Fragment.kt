@@ -26,10 +26,9 @@ class Exercise3Fragment : BaseFragment() {
     private lateinit var btnGetReputation: Button
     private lateinit var txtElapsedTime: TextView
 
-
     private lateinit var getReputationEndpoint: GetReputationEndpoint
 
-    private var job: Job? = null
+    private var jobElapsedTime: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,7 +42,7 @@ class Exercise3Fragment : BaseFragment() {
 
         edtUserId = view.findViewById(R.id.edt_user_id)
         edtUserId.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 btnGetReputation.isEnabled = !s.isNullOrEmpty()
@@ -55,20 +54,36 @@ class Exercise3Fragment : BaseFragment() {
         btnGetReputation = view.findViewById(R.id.btn_get_reputation)
         btnGetReputation.setOnClickListener {
             logThreadInfo("button callback")
-            job = coroutineScope.launch {
+
+            jobElapsedTime = coroutineScope.launch {
+                updateElapsedTime()
+            }
+
+            coroutineScope.launch {
                 btnGetReputation.isEnabled = false
                 val reputation = getReputationForUser(edtUserId.text.toString())
                 Toast.makeText(requireContext(), "reputation: $reputation", Toast.LENGTH_SHORT).show()
                 btnGetReputation.isEnabled = true
+                jobElapsedTime?.cancel()
             }
         }
 
         return view
     }
 
+    private suspend fun updateElapsedTime() {
+        val startTimeNano = System.nanoTime()
+        while (true) {
+            delay(100)
+            val elapsedTimeNano = System.nanoTime() - startTimeNano
+            val elapsedTimeMs = elapsedTimeNano / 1_000_000
+            txtElapsedTime.text = "Elapsed time: $elapsedTimeMs ms"
+        }
+    }
+
     override fun onStop() {
         super.onStop()
-        job?.cancel()
+        coroutineScope.coroutineContext.cancelChildren()
         btnGetReputation.isEnabled = true
     }
 
