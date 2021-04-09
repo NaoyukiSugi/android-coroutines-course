@@ -26,14 +26,15 @@ class Exercise5Fragment : BaseFragment() {
     private lateinit var btnGetReputation: Button
     private lateinit var txtElapsedTime: TextView
 
-
     private lateinit var getReputationEndpoint: GetReputationEndpoint
+
+    private lateinit var myGetReputationUseCase: MyGetReputationUseCase
 
     private var job: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        getReputationEndpoint = compositionRoot.getReputationEndpoint
+        myGetReputationUseCase = compositionRoot.myGetReputationUseCase
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -43,7 +44,7 @@ class Exercise5Fragment : BaseFragment() {
 
         edtUserId = view.findViewById(R.id.edt_user_id)
         edtUserId.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 btnGetReputation.isEnabled = !s.isNullOrEmpty()
@@ -57,7 +58,7 @@ class Exercise5Fragment : BaseFragment() {
             logThreadInfo("button callback")
             job = coroutineScope.launch {
                 btnGetReputation.isEnabled = false
-                val reputation = getReputationForUser(edtUserId.text.toString())
+                val reputation = myGetReputationUseCase.getReputationForUser(edtUserId.text.toString())
                 Toast.makeText(requireContext(), "reputation: $reputation", Toast.LENGTH_SHORT).show()
                 btnGetReputation.isEnabled = true
             }
@@ -70,13 +71,6 @@ class Exercise5Fragment : BaseFragment() {
         super.onStop()
         job?.cancel()
         btnGetReputation.isEnabled = true
-    }
-
-    private suspend fun getReputationForUser(userId: String): Int {
-        return withContext(Dispatchers.Default) {
-            logThreadInfo("getReputationForUser()")
-            getReputationEndpoint.getReputation(userId)
-        }
     }
 
     private fun logThreadInfo(message: String) {
