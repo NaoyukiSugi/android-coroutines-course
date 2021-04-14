@@ -15,7 +15,7 @@ class Exercise7Test {
         runBlocking {
             val scopeJob = Job()
             val scope = CoroutineScope(scopeJob + CoroutineName("outer scope") + Dispatchers.IO)
-            scope.launch(CoroutineName("coroutine")) {
+            val job = scope.launch(CoroutineName("coroutine")) {
                 try {
                     delay(100)
                     withContext(CoroutineName("withContext") + Dispatchers.Default) {
@@ -44,7 +44,7 @@ class Exercise7Test {
                 delay(250)
                 scope.cancel()
             }
-            scopeJob.join()
+            job.join()
             println("test done")
         }
     }
@@ -58,7 +58,7 @@ class Exercise7Test {
         runBlocking {
             val scopeJob = Job()
             val scope = CoroutineScope(scopeJob + CoroutineName("outer scope") + Dispatchers.IO)
-            scope.launch(CoroutineName("coroutine")) {
+            val job = scope.launch(CoroutineName("coroutine")) {
                 try {
                     delay(100)
                     withContext(CoroutineName("withContext") + Dispatchers.Default) {
@@ -70,7 +70,7 @@ class Exercise7Test {
                                     delay(100)
                                     println("nested coroutine completed")
                                 } catch (e: CancellationException) {
-                                    println("nested cancelled")
+                                    println("nested coroutine cancelled")
                                 }
                             }
                             println("withContext completed")
@@ -87,7 +87,7 @@ class Exercise7Test {
                 delay(250)
                 scope.cancel()
             }
-            scopeJob.join()
+            job.join()
             println("test done")
         }
     }
@@ -101,16 +101,38 @@ class Exercise7Test {
         runBlocking {
             val scopeJob = Job()
             val scope = CoroutineScope(scopeJob + CoroutineName("outer scope") + Dispatchers.IO)
-            scope.launch {
-                withContext(CoroutineName("withContext")) {
-                    scope.launch {
-
+            val job = scope.launch(CoroutineName("coroutine")) {
+                try {
+                    delay(100)
+                    withContext(CoroutineName("withContext") + Dispatchers.Default) {
+                        try {
+                            delay(100)
+                            scope.launch(CoroutineName("nested coroutine")) {
+                                try {
+                                    printJobsHierarchy(scopeJob)
+                                    delay(100)
+                                    println("nested coroutine completed")
+                                } catch (e: CancellationException) {
+                                    println("nested coroutine cancelled")
+                                }
+                            }
+                            println("withContext completed")
+                        } catch (e: CancellationException) {
+                            println("withContext cancelled")
+                        }
                     }
+                    println("coroutine completed")
+                    delay(200)
+                } catch (e: CancellationException) {
+                    println("coroutine cancelled")
                 }
             }
-            scopeJob.join()
+            launch {
+                delay(250)
+                scope.cancel()
+            }
+            job.join()
             println("test done")
         }
     }
-
 }
