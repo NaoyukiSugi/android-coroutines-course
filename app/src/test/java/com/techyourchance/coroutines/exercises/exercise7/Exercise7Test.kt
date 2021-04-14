@@ -58,14 +58,35 @@ class Exercise7Test {
         runBlocking {
             val scopeJob = Job()
             val scope = CoroutineScope(scopeJob + CoroutineName("outer scope") + Dispatchers.IO)
-            scope.launch {
-                withContext(CoroutineName("withContext")) {
-                    launch {
-
+            scope.launch(CoroutineName("coroutine")) {
+                try {
+                    delay(100)
+                    withContext(CoroutineName("withContext") + Dispatchers.Default) {
+                        try {
+                            delay(100)
+                            launch(CoroutineName("nested coroutine")) {
+                                try {
+                                    printJobsHierarchy(scopeJob)
+                                    delay(100)
+                                    println("nested coroutine completed")
+                                } catch (e: CancellationException) {
+                                    println("nested cancelled")
+                                }
+                            }
+                            println("withContext completed")
+                        } catch (e: CancellationException) {
+                            println("withContext cancelled")
+                        }
                     }
+                    println("coroutine completed")
+                } catch (e: CancellationException) {
+                    println("coroutine cancelled")
                 }
             }
-            scopeJob.cancel()
+            launch {
+                delay(250)
+                scope.cancel()
+            }
             scopeJob.join()
             println("test done")
         }
