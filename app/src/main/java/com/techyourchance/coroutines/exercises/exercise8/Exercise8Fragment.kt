@@ -52,10 +52,15 @@ class Exercise8Fragment : BaseFragment() {
                     fetchAndCacheUsersUseCase.fetchAndCacheUsers(userIds)
                     updateElapsedTimeJob.cancel()
                 } catch (e: CancellationException) {
-                    updateElapsedTimeJob.cancelAndJoin()
-                    txtElapsedTime.text = ""
+                    try {
+                        updateElapsedTimeJob.cancelAndJoin()
+                    } catch (e: CancellationException) {
+                        txtElapsedTime.text = ""
+                    }
                 } finally {
-                    btnFetch.isEnabled = true
+                    withContext((NonCancellable)) {
+                        btnFetch.isEnabled = true
+                    }
                 }
             }
         }
