@@ -21,7 +21,11 @@ import java.lang.Exception
 
 class Exercise10Fragment : BaseFragment() {
 
-    private val coroutineScope = CoroutineScope(Dispatchers.Main.immediate)
+    private val coroutineExceptionHandlerException = CoroutineExceptionHandler { coroutineContext, throwable ->
+        Toast.makeText(requireContext(), "caught exception: $coroutineContext", Toast.LENGTH_SHORT).show()
+    }
+
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate + coroutineExceptionHandlerException)
 
     override val screenTitle get() = ScreenReachableFromHome.EXERCISE_10.description
 
@@ -47,7 +51,7 @@ class Exercise10Fragment : BaseFragment() {
 
         refreshUiState()
 
-        edtUsername.addTextChangedListener(object: TextWatcher {
+        edtUsername.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
@@ -57,7 +61,7 @@ class Exercise10Fragment : BaseFragment() {
             override fun afterTextChanged(s: Editable?) {}
         })
 
-        edtPassword.addTextChangedListener(object: TextWatcher {
+        edtPassword.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
@@ -68,19 +72,19 @@ class Exercise10Fragment : BaseFragment() {
         })
 
         btnLogin.setOnClickListener {
-                coroutineScope.launch {
-                    try {
-                        btnLogin.isEnabled = false
-                        val result = loginUseCase.logIn(getUsername(), getPassword())
-                        when (result) {
-                            is Result.Success -> onUserLoggedIn(result.user)
-                            is Result.InvalidCredentials -> onInvalidCredentials()
-                            is Result.GeneralError -> onGeneralError()
-                        }
-                    } finally {
-                        refreshUiState()
+            coroutineScope.launch {
+                try {
+                    btnLogin.isEnabled = false
+                    val result = loginUseCase.logIn(getUsername(), getPassword())
+                    when (result) {
+                        is Result.Success -> onUserLoggedIn(result.user)
+                        is Result.InvalidCredentials -> onInvalidCredentials()
+                        is Result.GeneralError -> onGeneralError()
                     }
+                } finally {
+                    refreshUiState()
                 }
+            }
         }
 
         return view
